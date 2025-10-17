@@ -4,14 +4,15 @@ import { executeSync } from "../../helpers/CommandExecuter.js";
 
 export const DeployMetadata: Tool = {
   name: "Deploy_Metadata",
-  description: "Despliega metadatos en Salesforce usando el Salesforce CLI.",
+  description: "Deploy the changes using Salesforce CLI.",
   inputSchema: {
-    alias: z.string().describe("Alias de la organización de destino."),
-    metadataPaths: z.string().describe("Ruta de los archivos o directorios de metadatos a desplegar, separados por comas."),
+    alias: z.string().describe("Alias of the org to execute the command."),
+    projectPath: z.string().describe("Full Path of the Salesforce proyect where the deploy should be executed."),
+    metadataPaths: z.string().describe("Full Path of the files to deploy separated by comas, use always especific files never use full poryect path, a big folder or package.xml files."),
   },
   execute: deployMetadata,
   annotations: {
-    title: "Desplegar metadatos en Salesforce",
+    title: "Deploy metadata to Salesforce",
     readOnlyHint: false,
     destructiveHint: true,
     idempotentHint: false,
@@ -19,12 +20,12 @@ export const DeployMetadata: Tool = {
   },
 };
 
-function deployMetadata({ alias, metadataPaths }: { alias: string; metadataPaths: string }) {
+function deployMetadata({ alias,projectPath , metadataPaths }: { alias: string; projectPath: string; metadataPaths: string }) {
   let resultMessage;
   try {
-    resultMessage = executeSync(`sf project deploy start --target-org ${alias} --source-dir ${metadataPaths} --json`);
+    resultMessage = executeSync(`cd ${projectPath} && sf deploy metadata --target-org ${alias} --source-dir ${metadataPaths} --json`);
   } catch (error) {
-    resultMessage = `Error durante el despliegue: ${error}`;
+    resultMessage = `Error during deployment: ${error}`;
   }
   return {
     content: [
