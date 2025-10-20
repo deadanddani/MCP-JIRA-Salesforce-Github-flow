@@ -1,6 +1,9 @@
 import type { Tool } from "../../entities/Tool.js";
 import { z } from "zod";
 import { executeSync } from "../../helpers/CommandExecuter.js";
+import { cleanJSONResult } from "../../helpers/JSONService.js";
+import { getMessage } from "../../genericErrorHandler/GenericErrorsHandler.js";
+import { isDeveloperOrg } from "../../helpers/OrgService.js";
 
 export const RunTests: Tool = {
   name: "Run_Tests",
@@ -23,20 +26,22 @@ export const RunTests: Tool = {
 function runTests({ alias, testClasses, classesToCover }: { alias: string; testClasses: string[]; classesToCover: string[] }) {
   let resultMessage;
   try {
+    if( !isDeveloperOrg(alias) ){
+      throw new Error("DeployMetadata tool can only be used on Developer orgs, not on Sandboxes or Production orgs.");
+    }
+
     const classes = testClasses.join(",");
     resultMessage = executeSync(`sf apex run test --target-org ${alias} --class-names ${classes} --json --wait 30 --code-coverage`);
-    if(resultMessage.length > 2000) {
-      //remove the warning messages at the start of the json
-      resultMessage = resultMessage.replace(/^[^{]*({.*)$/s, '$1');
-      resultMessage = resultMessage.replace(/(.*\})[^}]*$/s, '$1');
+    if(resultMessage.length > 4000) {
+      cleanJSONResult(resultMessage);
       let result = JSON.parse(resultMessage);
       result.result.coverage.coverage = result.result.coverage.coverage.filter((item: { name: string; }) =>
         classesToCover.includes(item.name)
       );
       resultMessage = 'Show a summary of the coverage percentage. this is the result:' + JSON.stringify(result);
     }
-  } catch (error) {
-    resultMessage = `Error while running tests: ${error}`;
+  } catch (error: any) {
+    resultMessage = getMessage(error) ?? getDefaultErrorMessage(error);
   }
   return {
     content: [
@@ -47,3 +52,9 @@ function runTests({ alias, testClasses, classesToCover }: { alias: string; testC
     ],
   };
 }
+function getDefaultErrorMessage(error: any): any {
+  return `Error during the command execution: ${
+    error.stdout || error
+  }. let the user know why it failed.`;
+}
+
