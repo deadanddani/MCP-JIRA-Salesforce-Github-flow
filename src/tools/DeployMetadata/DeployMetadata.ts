@@ -4,11 +4,11 @@ import { executeSync } from "../../helpers/CommandExecuter.js";
 
 export const DeployMetadata: Tool = {
   name: "Deploy_Metadata",
-  description: "Deploy the changes using Salesforce CLI.",
+  description: "Deploy the changes using Salesforce CLI USE ONLY ON DEVELOPER ORGS.",
   inputSchema: {
-    alias: z.string().describe("Alias of the org to execute the command."),
+    alias: z.string().describe("Alias of the org to execute the command USE ONLY ON DEVELOPER ORGS."),
     projectPath: z.string().describe("Full Path of the Salesforce proyect where the deploy should be executed."),
-    metadataPaths: z.string().describe("Full Path of the files to deploy separated by comas, use always especific files never use full poryect path, a big folder or package.xml files."),
+    metadataPath: z.string().describe("Full Path of the single file or single folder to deploy, use always especific files or small folders never use full poryect path, big folder or package.xml files."),
   },
   execute: deployMetadata,
   annotations: {
@@ -20,10 +20,10 @@ export const DeployMetadata: Tool = {
   },
 };
 
-function deployMetadata({ alias,projectPath , metadataPaths }: { alias: string; projectPath: string; metadataPaths: string }) {
+function deployMetadata({ alias,projectPath , metadataPath }: { alias: string; projectPath: string; metadataPath: string }) {
   let resultMessage;
   try {
-    resultMessage = executeSync(`cd ${projectPath} && sf deploy metadata --target-org ${alias} --source-dir ${metadataPaths} --json`);
+    resultMessage = executeSync(`cd ${projectPath} && sf deploy metadata --target-org ${alias} --source-dir ${metadataPath} --json --ignore-conflicts`);
   } catch (error) {
     resultMessage = `Error during deployment: ${error}`;
   }

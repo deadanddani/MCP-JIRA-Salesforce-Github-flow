@@ -2,7 +2,10 @@ import { execSync } from "child_process";
 
 export function executeSync(command: string): string {
   try {
-    return execSync(command, { encoding: "utf-8" });
+    return execSync(command, { 
+      encoding: "utf-8",
+      maxBuffer: 5 * 1024 * 1024 // Increase buffer to 5MB for test executions results
+    });
   } catch (err: any) {
     // err may contain stdout/stderr as Buffer or string; normalize both
     const stdout = err && (err.stdout ?? (err.output && err.output[1]));

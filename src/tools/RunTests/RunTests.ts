@@ -8,7 +8,7 @@ export const RunTests: Tool = {
   inputSchema: {
     alias: z.string().describe("Target organization's alias."),
     testClasses: z.array(z.string()).describe("List of test class names to run."),
-    classesToCover: z.array(z.string()).describe("List of test class names to cover, this will be the only coverage information returned the rest will be skiped."),
+    classesToCover: z.array(z.string()).describe("List of test class names to cover, add always the classes that the tests provided cover, this will be the only coverage information returned the rest will be skiped."),
   },
   execute: runTests,
   annotations: {
@@ -24,17 +24,17 @@ function runTests({ alias, testClasses, classesToCover }: { alias: string; testC
   let resultMessage;
   try {
     const classes = testClasses.join(",");
-    resultMessage = executeSync(`sf apex run test --target-org ${alias} --classnames ${classes} --json --wait 30`);
-    // if(resultMessage.length > 2000) {
-    //   //remove the warning messages at the start of the json
-    //   resultMessage = resultMessage.replace(/^[^{]*({.*)$/s, '$1');
-    //   resultMessage = resultMessage.replace(/(.*\})[^}]*$/s, '$1');
-    //   // let result = JSON.parse(resultMessage);
-    //   // result.result.coverage.coverage = result.result.coverage.coverage.filter((item: { name: string; }) =>
-    //   //   classesToCover.includes(item.name)
-    //   // );
-    //   // resultMessage = JSON.stringify(result);
-    // }
+    resultMessage = executeSync(`sf apex run test --target-org ${alias} --class-names ${classes} --json --wait 30 --code-coverage`);
+    if(resultMessage.length > 2000) {
+      //remove the warning messages at the start of the json
+      resultMessage = resultMessage.replace(/^[^{]*({.*)$/s, '$1');
+      resultMessage = resultMessage.replace(/(.*\})[^}]*$/s, '$1');
+      let result = JSON.parse(resultMessage);
+      result.result.coverage.coverage = result.result.coverage.coverage.filter((item: { name: string; }) =>
+        classesToCover.includes(item.name)
+      );
+      resultMessage = 'Show a summary of the coverage percentage. this is the result:' + JSON.stringify(result);
+    }
   } catch (error) {
     resultMessage = `Error while running tests: ${error}`;
   }
